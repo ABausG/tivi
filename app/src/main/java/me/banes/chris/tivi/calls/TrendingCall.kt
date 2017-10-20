@@ -16,16 +16,17 @@
 
 package me.banes.chris.tivi.calls
 
-import com.uwetrottmann.tmdb2.Tmdb
 import com.uwetrottmann.trakt5.TraktV2
 import com.uwetrottmann.trakt5.entities.TrendingShow
 import com.uwetrottmann.trakt5.enums.Extended
-import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.Single
-import me.banes.chris.tivi.data.TiviShow
-import me.banes.chris.tivi.data.TiviShowDao
-import me.banes.chris.tivi.data.TrendingEntry
+import me.banes.chris.tivi.data.daos.TiviShowDao
+import me.banes.chris.tivi.data.daos.TrendingDao
+import me.banes.chris.tivi.data.entities.TiviShow
+import me.banes.chris.tivi.data.entities.TrendingEntry
+import me.banes.chris.tivi.data.entities.TrendingListItem
+import me.banes.chris.tivi.extensions.toRxSingle
 import me.banes.chris.tivi.util.AppRxSchedulers
 import me.banes.chris.tivi.util.DatabaseTxRunner
 import javax.inject.Inject
@@ -33,44 +34,27 @@ import javax.inject.Inject
 class TrendingCall @Inject constructor(
         databaseTxRunner: DatabaseTxRunner,
         showDao: TiviShowDao,
-        tmdb: Tmdb,
+        trendingDao: TrendingDao,
+        traktShowFetcher: TraktShowFetcher,
         trakt: TraktV2,
-        schedulers: AppRxSchedulers)
-    : PaginatedTraktCall<TrendingShow>(databaseTxRunner, showDao, tmdb, trakt, schedulers) {
-
-    override fun createData(page: Int?): Flowable<List<TiviShow>> {
-        return if (page == null) showDao.trendingShows() else showDao.trendingShowsPage(page)
-    }
+        schedulers: AppRxSchedulers
+) : PaginatedEntryCallImpl<TrendingShow, TrendingEntry, TrendingListItem, TrendingDao>(databaseTxRunner, showDao, trendingDao, trakt, schedulers, traktShowFetcher) {
 
     override fun networkCall(page: Int): Single<List<TrendingShow>> {
-        return Single.fromCallable {
-            trakt.shows().trending(page + 1, DEFAULT_PAGE_SIZE, Extended.NOSEASONS).execute().body()
+        // We add one to the page since Trakt uses a 1-based index whereas we use 0-based
+        return trakt.shows().trending(page + 1, pageSize, Extended.NOSEASONS)
+                .toRxSingle()
+    }
+
+    override fun mapToEntry(networkEntity: TrendingShow, show: TiviShow, page: Int): TrendingEntry {
+        assert(show.id != null)
+        return TrendingEntry(showId = show.id!!, page = page, watchers = networkEntity.watchers).apply {
+            this.show = show
         }
     }
 
-    override fun filterResponse(response: TrendingShow): Boolean {
-        return response.show.ids.tmdb != null
-    }
-
     override fun loadShow(response: TrendingShow): Maybe<TiviShow> {
-        return showFromTmdb(response.show.ids.tmdb, response.show.ids.trakt)
-    }
-
-    override fun lastPageLoaded(): Single<Int> {
-        return showDao.getLastTrendingPage()
-    }
-
-    override fun deleteEntries() {
-        showDao.deleteTrendingShows()
-    }
-
-    override fun deletePage(page: Int) {
-        showDao.deleteTrendingShowsPageSync(page)
-    }
-
-    override fun saveEntry(show: TiviShow, page: Int, order: Int) {
-        val entry = TrendingEntry(showId = show.id, page = page, pageOrder = order)
-        entry.id = showDao.insertTrending(entry)
+        return traktShowFetcher.getShow(response.show.ids.trakt, response.show)
     }
 
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package me.banes.chris.tivi.data
+package me.banes.chris.tivi.data.entities
 
 import android.arch.persistence.room.ColumnInfo
 import android.arch.persistence.room.Entity
@@ -22,20 +22,24 @@ import android.arch.persistence.room.ForeignKey
 import android.arch.persistence.room.Ignore
 import android.arch.persistence.room.Index
 import android.arch.persistence.room.PrimaryKey
+import me.banes.chris.tivi.data.Entry
+import org.threeten.bp.OffsetDateTime
 
-@Entity(tableName = "popular_shows",
+@Entity(tableName = "watched_entries",
         indices = arrayOf(Index(value = "show_id", unique = true)),
         foreignKeys = arrayOf(
                 ForeignKey(entity = TiviShow::class,
                         parentColumns = arrayOf("id"),
                         childColumns = arrayOf("show_id"),
                         onUpdate = ForeignKey.CASCADE,
-                        onDelete = ForeignKey.CASCADE)))
-data class PopularEntry(
-        @PrimaryKey var id: Long? = null,
-        @ColumnInfo(name = "show_id") var showId: Long? = null,
-        @ColumnInfo(name = "page") var page: Int? = null,
-        @ColumnInfo(name = "page_order") var pageOrder: Int? = null) {
-    // Needed just for Room
-    @Ignore constructor() : this(null)
+                        onDelete = ForeignKey.CASCADE
+                )
+        )
+)
+data class WatchedEntry(
+        @PrimaryKey(autoGenerate = true) override val id: Long? = null,
+        @ColumnInfo(name = "show_id") override val showId: Long,
+        @ColumnInfo(name = "last_watched") val lastWatched: OffsetDateTime
+) : Entry {
+    @Ignore override var show: TiviShow? = null
 }

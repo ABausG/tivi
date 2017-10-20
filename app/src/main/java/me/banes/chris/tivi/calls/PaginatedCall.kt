@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
-package me.banes.chris.tivi.data
+package me.banes.chris.tivi.calls
 
-data class Page<T>(val page: Int, val items: List<T>)
+import io.reactivex.Completable
+import io.reactivex.Flowable
+
+interface PaginatedCall<in Param, DatabaseOutput> : ListCall<Param, DatabaseOutput> {
+    fun data(page: Int): Flowable<List<DatabaseOutput>>
+    fun loadNextPage(): Completable
+}

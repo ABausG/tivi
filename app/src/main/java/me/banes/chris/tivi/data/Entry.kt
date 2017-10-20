@@ -16,19 +16,14 @@
 
 package me.banes.chris.tivi.data
 
-import android.arch.persistence.room.Dao
-import android.arch.persistence.room.Insert
-import android.arch.persistence.room.OnConflictStrategy
-import android.arch.persistence.room.Query
-import io.reactivex.Flowable
+import me.banes.chris.tivi.data.entities.TiviShow
 
-@Dao
-interface UserDao {
+interface Entry {
+    val id: Long?
+    val showId: Long
+    var show: TiviShow?
+}
 
-    @Query("SELECT * FROM users")
-    fun getTraktUser(): Flowable<TraktUser>
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertUser(user: TraktUser): Long
-
+interface PaginatedEntry : Entry {
+    val page: Int
 }

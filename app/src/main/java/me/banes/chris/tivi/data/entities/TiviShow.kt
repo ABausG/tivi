@@ -14,44 +14,44 @@
  * limitations under the License.
  */
 
-package me.banes.chris.tivi.data
+package me.banes.chris.tivi.data.entities
 
 import android.arch.persistence.room.ColumnInfo
 import android.arch.persistence.room.Entity
-import android.arch.persistence.room.Ignore
 import android.arch.persistence.room.Index
 import android.arch.persistence.room.PrimaryKey
-import java.util.Date
-import java.util.concurrent.TimeUnit
+import org.threeten.bp.OffsetDateTime
+import kotlin.reflect.KMutableProperty0
 
 @Entity(tableName = "shows",
         indices = arrayOf(
                 Index(value = "trakt_id", unique = true),
                 Index(value = "tmdb_id", unique = true)))
 data class TiviShow(
-        @PrimaryKey @ColumnInfo(name = "id") var id: Long? = null,
+        @PrimaryKey(autoGenerate = true) @ColumnInfo(name = "id") var id: Long? = null,
         @ColumnInfo(name = "title") var title: String? = null,
         @ColumnInfo(name = "original_title") var originalTitle: String? = null,
         @ColumnInfo(name = "trakt_id") var traktId: Int? = null,
         @ColumnInfo(name = "tmdb_id") var tmdbId: Int? = null,
         @ColumnInfo(name = "tmdb_poster_path") var tmdbPosterPath: String? = null,
         @ColumnInfo(name = "tmdb_backdrop_path") var tmdbBackdropPath: String? = null,
-        @ColumnInfo(name = "trakt_updated") var lastTraktUpdate: Date? = null,
-        @ColumnInfo(name = "tmdb_updated") var lastTmdbUpdate: Date? = null,
+        @ColumnInfo(name = "trakt_updated") var lastTraktUpdate: OffsetDateTime? = null,
+        @ColumnInfo(name = "tmdb_updated") var lastTmdbUpdate: OffsetDateTime? = null,
         @ColumnInfo(name = "overview") var summary: String? = null,
         @ColumnInfo(name = "homepage") var homepage: String? = null) {
 
-    // Needed just for Room
-    @Ignore constructor() : this(null)
-
-    fun needsUpdateFromTmdb(): Boolean {
-        return tmdbId == null
-                || lastTmdbUpdate == null
-                || olderThan(lastTmdbUpdate!!, 1, TimeUnit.DAYS)
+    companion object {
+        val PLACEHOLDER = TiviShow()
     }
 
-    private fun olderThan(date: Date, period: Long, unit: TimeUnit): Boolean {
-        return date.time < System.currentTimeMillis() - unit.toMillis(period)
+    fun needsUpdateFromTmdb(): Boolean {
+        return tmdbId != null && (lastTmdbUpdate?.isBefore(OffsetDateTime.now().minusDays(1)) != false)
+    }
+
+    fun <T> updateProperty(entityVar: KMutableProperty0<T?>, updateVal: T?) {
+        when {
+            updateVal != null -> entityVar.set(updateVal)
+        }
     }
 }
 

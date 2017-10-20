@@ -30,20 +30,23 @@ import kotlinx.android.synthetic.main.fragment_rv_grid.*
 import me.banes.chris.tivi.R
 import me.banes.chris.tivi.TiviFragment
 import me.banes.chris.tivi.api.Status
+import me.banes.chris.tivi.data.Entry
+import me.banes.chris.tivi.data.entities.ListItem
 import me.banes.chris.tivi.ui.EndlessRecyclerViewScrollListener
 import me.banes.chris.tivi.ui.SpacingItemDecorator
 import me.banes.chris.tivi.ui.TiviShowGridAdapter
 import javax.inject.Inject
 
 @SuppressLint("ValidFragment")
-abstract class PaginatedGridFragment<T, VM : PaginatedTraktViewModel<T>>(
-        private val vmClass: Class<VM>?) : TiviFragment() {
+abstract class EntryGridFragment<LI : ListItem<out Entry>, VM : EntryViewModel<LI>>(
+        private val vmClass: Class<VM>
+) : TiviFragment() {
 
     @Inject lateinit var viewModelFactory: ViewModelProvider.Factory
 
     protected lateinit var viewModel: VM
 
-    private val adapter = TiviShowGridAdapter()
+    private val adapter = TiviShowGridAdapter<LI>()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_rv_grid, container, false)
@@ -53,7 +56,7 @@ abstract class PaginatedGridFragment<T, VM : PaginatedTraktViewModel<T>>(
         super.onViewCreated(view, savedInstanceState)
 
         grid_recyclerview.apply {
-            adapter = this@PaginatedGridFragment.adapter
+            adapter = this@EntryGridFragment.adapter
             addItemDecoration(SpacingItemDecorator(paddingLeft))
             addOnScrollListener(EndlessRecyclerViewScrollListener(
                     grid_recyclerview.layoutManager, { _: Int, _: RecyclerView ->
@@ -72,21 +75,24 @@ abstract class PaginatedGridFragment<T, VM : PaginatedTraktViewModel<T>>(
     override fun onStart() {
         super.onStart()
 
-        viewModel.data.observe(this, Observer {
-            it?.let { adapter.updateItems(it) }
-        })
+        viewModel.liveList.observe(this, Observer(adapter::setList))
 
         viewModel.messages.observe(this, Observer {
             when (it?.status) {
                 Status.SUCCESS -> {
                     grid_swipe_refresh.isRefreshing = false
+                    progress_loadmore.visibility = View.GONE
                 }
                 Status.ERROR -> {
                     grid_swipe_refresh.isRefreshing = false
+                    progress_loadmore.visibility = View.GONE
                     Snackbar.make(grid_recyclerview, it.message ?: "EMPTY", Snackbar.LENGTH_SHORT).show()
                 }
-                Status.LOADING -> {
+                Status.REFRESHING -> {
                     grid_swipe_refresh.isRefreshing = true
+                }
+                Status.LOADING_MORE -> {
+                    progress_loadmore.visibility = View.VISIBLE
                 }
             }
         })

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package me.banes.chris.tivi.data
+package me.banes.chris.tivi.data.entities
 
 import android.arch.persistence.room.ColumnInfo
 import android.arch.persistence.room.Entity
@@ -22,6 +22,7 @@ import android.arch.persistence.room.ForeignKey
 import android.arch.persistence.room.Ignore
 import android.arch.persistence.room.Index
 import android.arch.persistence.room.PrimaryKey
+import me.banes.chris.tivi.data.PaginatedEntry
 
 @Entity(tableName = "trending_shows",
         indices = arrayOf(Index(value = "show_id", unique = true)),
@@ -30,12 +31,15 @@ import android.arch.persistence.room.PrimaryKey
                         parentColumns = arrayOf("id"),
                         childColumns = arrayOf("show_id"),
                         onUpdate = ForeignKey.CASCADE,
-                        onDelete = ForeignKey.CASCADE)))
+                        onDelete = ForeignKey.CASCADE
+                )
+        )
+)
 data class TrendingEntry(
-        @PrimaryKey var id: Long? = null,
-        @ColumnInfo(name = "show_id") var showId: Long? = null,
-        @ColumnInfo(name = "page") var page: Int? = null,
-        @ColumnInfo(name = "page_order") var pageOrder: Int? = null) {
-    // Needed just for Room
-    @Ignore constructor() : this(null)
+        @PrimaryKey(autoGenerate = true) override val id: Long? = null,
+        @ColumnInfo(name = "show_id") override val showId: Long,
+        @ColumnInfo(name = "page") override val page: Int,
+        @ColumnInfo(name = "watchers") val watchers: Int
+) : PaginatedEntry {
+    @Ignore override var show: TiviShow? = null
 }

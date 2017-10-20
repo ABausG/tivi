@@ -18,19 +18,18 @@ package me.banes.chris.tivi.home.trending
 
 import android.os.Bundle
 import android.view.View
-import com.uwetrottmann.trakt5.entities.TrendingShow
 import kotlinx.android.synthetic.main.fragment_rv_grid.*
 import me.banes.chris.tivi.R
-import me.banes.chris.tivi.util.PaginatedGridFragment
+import me.banes.chris.tivi.data.entities.TrendingListItem
+import me.banes.chris.tivi.util.EntryGridFragment
 
-class TrendingShowsFragment
-    : PaginatedGridFragment<TrendingShow, TrendingShowsViewModel>(TrendingShowsViewModel::class.java) {
+class TrendingShowsFragment : EntryGridFragment<TrendingListItem, TrendingShowsViewModel>(TrendingShowsViewModel::class.java) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         toolbar.apply {
-            title = getString(R.string.discover_popular)
+            title = getString(R.string.discover_trending)
             setNavigationOnClickListener {
                 viewModel.onUpClicked()
             }

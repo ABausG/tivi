@@ -18,17 +18,16 @@ package me.banes.chris.tivi
 
 import dagger.android.AndroidInjector
 import dagger.android.DaggerApplication
+import me.banes.chris.tivi.appmanagers.AppManagers
 import me.banes.chris.tivi.inject.DaggerAppComponent
-import timber.log.Timber
+import javax.inject.Inject
 
 class TiviApplication : DaggerApplication() {
+    @Inject lateinit var managers: AppManagers
 
     override fun onCreate() {
         super.onCreate()
-
-        if (BuildConfig.DEBUG) {
-            Timber.plant(Timber.DebugTree())
-        }
+        managers.init(this)
     }
 
     override fun applicationInjector(): AndroidInjector<out DaggerApplication> {

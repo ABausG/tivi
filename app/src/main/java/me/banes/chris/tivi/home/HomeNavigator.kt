@@ -16,16 +16,12 @@
 
 package me.banes.chris.tivi.home
 
-import me.banes.chris.tivi.data.TiviShow
+import me.banes.chris.tivi.data.entities.TiviShow
 
 interface HomeNavigator {
-
     fun showPopular()
-
     fun showTrending()
-
-    fun showShowDetails(tiviShow: TiviShow)
-
+    fun showWatched()
+    fun showShowDetails(show: TiviShow)
     fun onUpClicked()
-
 }
