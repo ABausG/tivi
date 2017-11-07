@@ -20,8 +20,6 @@ import android.arch.lifecycle.MutableLiveData
 import io.reactivex.Flowable
 import io.reactivex.functions.BiFunction
 import me.banes.chris.tivi.AppNavigator
-import me.banes.chris.tivi.calls.PopularCall
-import me.banes.chris.tivi.calls.TrendingCall
 import me.banes.chris.tivi.data.Entry
 import me.banes.chris.tivi.data.entities.ListItem
 import me.banes.chris.tivi.data.entities.PopularListItem
@@ -33,19 +31,20 @@ import me.banes.chris.tivi.home.HomeNavigator
 import me.banes.chris.tivi.home.discover.DiscoverViewModel.Section.POPULAR
 import me.banes.chris.tivi.home.discover.DiscoverViewModel.Section.TRENDING
 import me.banes.chris.tivi.trakt.TraktManager
+import me.banes.chris.tivi.trakt.calls.PopularCall
+import me.banes.chris.tivi.trakt.calls.TrendingCall
 import me.banes.chris.tivi.util.AppRxSchedulers
 import timber.log.Timber
 import javax.inject.Inject
 
 internal class DiscoverViewModel @Inject constructor(
-        private val schedulers: AppRxSchedulers,
+        schedulers: AppRxSchedulers,
         private val popularCall: PopularCall,
         private val trendingCall: TrendingCall,
-        private val navigator: HomeNavigator,
         appNavigator: AppNavigator,
         traktManager: TraktManager) : HomeFragmentViewModel(traktManager, appNavigator) {
 
-    data class SectionPage(val section: Section, val items: List<out ListItem<out Entry>>)
+    data class SectionPage(val section: Section, val items: List<ListItem<out Entry>>)
 
     enum class Section {
         TRENDING, POPULAR
@@ -81,15 +80,14 @@ internal class DiscoverViewModel @Inject constructor(
         Timber.e(t, "Error while refreshing")
     }
 
-    fun onSectionHeaderClicked(section: Section) {
+    fun onSectionHeaderClicked(navigator: HomeNavigator, section: Section) {
         when (section) {
             TRENDING -> navigator.showTrending()
             POPULAR -> navigator.showPopular()
         }
     }
 
-    fun onItemPostedClicked(show: TiviShow) {
+    fun onItemPostedClicked(navigator: HomeNavigator, show: TiviShow) {
         navigator.showShowDetails(show)
     }
-
 }

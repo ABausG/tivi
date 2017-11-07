@@ -16,21 +16,18 @@
 
 package me.banes.chris.tivi.home.trending
 
-import me.banes.chris.tivi.calls.TrendingCall
 import me.banes.chris.tivi.data.entities.TrendingListItem
 import me.banes.chris.tivi.home.HomeNavigator
+import me.banes.chris.tivi.trakt.calls.TrendingCall
 import me.banes.chris.tivi.util.AppRxSchedulers
 import me.banes.chris.tivi.util.EntryViewModel
 import javax.inject.Inject
 
 class TrendingShowsViewModel @Inject constructor(
         schedulers: AppRxSchedulers,
-        call: TrendingCall,
-        private val navigator: HomeNavigator
+        call: TrendingCall
 ) : EntryViewModel<TrendingListItem>(schedulers, call) {
-
-    fun onUpClicked() {
+    fun onUpClicked(navigator: HomeNavigator) {
         navigator.onUpClicked()
     }
-
 }
