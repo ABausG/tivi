@@ -27,15 +27,18 @@ import com.xwray.groupie.GroupAdapter
 import com.xwray.groupie.ViewHolder
 import kotlinx.android.synthetic.main.fragment_summary.*
 import me.banes.chris.tivi.R
+import me.banes.chris.tivi.extensions.doOnPreDraw
 import me.banes.chris.tivi.extensions.observeK
 import me.banes.chris.tivi.home.HomeFragment
 import me.banes.chris.tivi.home.HomeNavigator
 import me.banes.chris.tivi.home.HomeNavigatorViewModel
+import me.banes.chris.tivi.home.discover.SectionedHelper
+import me.banes.chris.tivi.ui.SharedElementHelper
 import me.banes.chris.tivi.ui.SpacingItemDecorator
-import me.banes.chris.tivi.ui.groupieitems.EmptyPlaceholderItem
 import me.banes.chris.tivi.ui.groupieitems.HeaderItem
 import me.banes.chris.tivi.ui.groupieitems.ShowPosterItem
 import me.banes.chris.tivi.ui.groupieitems.ShowPosterSection
+import me.banes.chris.tivi.util.GridToGridTransitioner
 
 class LibraryFragment : HomeFragment<LibraryViewModel>() {
 
@@ -44,10 +47,15 @@ class LibraryFragment : HomeFragment<LibraryViewModel>() {
     private lateinit var gridLayoutManager: GridLayoutManager
     private val groupAdapter = GroupAdapter<ViewHolder>()
 
+    private lateinit var sectionHelper: SectionedHelper<LibraryViewModel.Section>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewModel = ViewModelProviders.of(this, viewModelFactory).get(LibraryViewModel::class.java)
         homeNavigator = ViewModelProviders.of(activity!!, viewModelFactory).get(HomeNavigatorViewModel::class.java)
+
+        GridToGridTransitioner.setupFirstFragment(this,
+                intArrayOf(R.id.summary_appbarlayout, R.id.summary_status_scrim))
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -58,21 +66,42 @@ class LibraryFragment : HomeFragment<LibraryViewModel>() {
         super.onActivityCreated(savedInstanceState)
 
         viewModel.data.observeK(this) {
-            it?.run { updateAdapter(it) } ?: groupAdapter.clear()
+            it?.run {
+                sectionHelper.update(it.map { it.section to it.items }.toMap())
+            }
         }
     }
 
-    override fun onViewCreated(view: View
-            , savedInstanceState: Bundle?) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        val container = view.parent as ViewGroup
+        postponeEnterTransition()
+        container.doOnPreDraw {
+            startPostponedEnterTransition()
+        }
 
         gridLayoutManager = summary_rv.layoutManager as GridLayoutManager
         gridLayoutManager.spanSizeLookup = groupAdapter.spanSizeLookup
 
+        sectionHelper = SectionedHelper(
+                summary_rv,
+                groupAdapter,
+                gridLayoutManager.spanCount,
+                { _, list -> ShowPosterSection(list.mapNotNull { it.show }) },
+                this::titleFromSection)
+
         groupAdapter.apply {
             setOnItemClickListener { item, _ ->
                 when (item) {
-                    is HeaderItem -> viewModel.onSectionHeaderClicked(homeNavigator, item.tag as LibraryViewModel.Section)
+                    is HeaderItem -> {
+                        val section = item.tag as LibraryViewModel.Section
+
+                        val sharedElements = SharedElementHelper()
+                        sectionHelper.addSharedElementsForSection(section, sharedElements)
+
+                        viewModel.onSectionHeaderClicked(homeNavigator, section, sharedElements)
+                    }
                     is ShowPosterItem -> viewModel.onItemPostedClicked(homeNavigator, item.show)
                 }
             }
@@ -95,20 +124,6 @@ class LibraryFragment : HomeFragment<LibraryViewModel>() {
 
     override fun getMenu(): Menu? = summary_toolbar.menu
 
-    private fun updateAdapter(data: List<LibraryViewModel.SectionPage>) {
-        val spanCount = gridLayoutManager.spanCount
-        groupAdapter.clear()
-
-        data.forEach { section ->
-            val group = ShowPosterSection().apply {
-                setHeader(HeaderItem(titleFromSection(section.section), section.section))
-                setPlaceholder(EmptyPlaceholderItem())
-                update(section.items.mapNotNull { it.show }.take(spanCount * 2))
-            }
-            groupAdapter.add(group)
-        }
-    }
-
     private fun titleFromSection(section: LibraryViewModel.Section) = when (section) {
         LibraryViewModel.Section.WATCHED -> getString(R.string.library_watched)
         else -> "FIXME"
@@ -121,5 +136,4 @@ class LibraryFragment : HomeFragment<LibraryViewModel>() {
         }
         summary_appbarlayout.setExpanded(true)
     }
-
 }

@@ -22,6 +22,7 @@ import android.arch.lifecycle.ViewModelProviders
 import android.os.Bundle
 import android.support.constraint.ConstraintLayout
 import android.support.design.widget.Snackbar
+import android.support.v7.widget.DefaultItemAnimator
 import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
@@ -59,6 +60,11 @@ abstract class EntryGridFragment<LI : ListItem<out Entry>, VM : EntryViewModel<L
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewModel = ViewModelProviders.of(this, viewModelFactory).get(vmClass)
+
+        GridToGridTransitioner.setupSecondFragment(this,
+                intArrayOf(R.id.grid_toolbar, R.id.grid_status_scrim)) {
+            grid_recyclerview?.itemAnimator = DefaultItemAnimator()
+        }
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -68,7 +74,9 @@ abstract class EntryGridFragment<LI : ListItem<out Entry>, VM : EntryViewModel<L
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        swipeRefreshLatch = ProgressTimeLatch {
+        postponeEnterTransition()
+
+        swipeRefreshLatch = ProgressTimeLatch(minShowTime = 1350) {
             grid_swipe_refresh.isRefreshing = it
         }
 
@@ -76,12 +84,14 @@ abstract class EntryGridFragment<LI : ListItem<out Entry>, VM : EntryViewModel<L
         adapter = createAdapter(layoutManager.spanCount)
 
         layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-            override fun getSpanSize(position: Int): Int {
-                return adapter.getItemColumnSpan(position)
-            }
+            override fun getSpanSize(position: Int): Int = adapter.getItemColumnSpan(position)
         }
 
         grid_recyclerview.apply {
+            // We set the item animator to null since it can interfere with the enter/shared element
+            // transitions
+            itemAnimator = null
+
             adapter = this@EntryGridFragment.adapter
             addItemDecoration(SpacingItemDecorator(paddingLeft))
             addOnScrollListener(EndlessRecyclerViewScrollListener(layoutManager, { _: Int, _: RecyclerView ->
@@ -103,6 +113,7 @@ abstract class EntryGridFragment<LI : ListItem<out Entry>, VM : EntryViewModel<L
 
             val tlp = (grid_toolbar.layoutParams as ConstraintLayout.LayoutParams)
             tlp.topMargin = topInset
+            grid_toolbar.layoutParams = tlp
             grid_toolbar.layoutParams = tlp
 
             val scrimLp = (grid_status_scrim.layoutParams as ConstraintLayout.LayoutParams)
@@ -129,16 +140,10 @@ abstract class EntryGridFragment<LI : ListItem<out Entry>, VM : EntryViewModel<L
             }
         })
 
-        grid_root.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-        grid_root.requestApplyInsets()
-    }
-
-    open fun createAdapter(spanCount: Int): ShowPosterGridAdapter<LI> = ShowPosterGridAdapter(spanCount)
-
-    override fun onStart() {
-        super.onStart()
-
-        viewModel.liveList.observeK(this, adapter::setList)
+        viewModel.liveList.observeK(this) {
+            adapter.setList(it)
+            startPostponedEnterTransition()
+        }
 
         viewModel.messages.observeK(this) {
             when (it?.status) {
@@ -151,14 +156,12 @@ abstract class EntryGridFragment<LI : ListItem<out Entry>, VM : EntryViewModel<L
                     adapter.isLoading = false
                     Snackbar.make(grid_recyclerview, it.message ?: "EMPTY", Snackbar.LENGTH_SHORT).show()
                 }
-                Status.REFRESHING -> {
-                    swipeRefreshLatch.refreshing = true
-                }
-                Status.LOADING_MORE -> {
-                    adapter.isLoading = true
-                }
+                Status.REFRESHING -> swipeRefreshLatch.refreshing = true
+                Status.LOADING_MORE -> adapter.isLoading = true
             }
         }
     }
+
+    open fun createAdapter(spanCount: Int): ShowPosterGridAdapter<LI> = ShowPosterGridAdapter(spanCount)
 
 }
