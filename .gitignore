@@ -11,3 +11,4 @@ captures
 # Do not commit plain release keys
 signing/app-release.jks
 signing/play-account.p12
+app/fabric.properties
