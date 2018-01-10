@@ -23,30 +23,25 @@ import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.LayerDrawable
 import android.os.Bundle
 import android.support.v7.graphics.Palette
-import android.support.v7.widget.GridLayoutManager
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.bumptech.glide.Glide
-import com.xwray.groupie.GroupAdapter
-import com.xwray.groupie.ViewHolder
 import kotlinx.android.synthetic.main.fragment_show_details.*
 import me.banes.chris.tivi.R
 import me.banes.chris.tivi.TiviFragment
-import me.banes.chris.tivi.data.entities.TiviShow
-import me.banes.chris.tivi.details.items.CertificationItem
-import me.banes.chris.tivi.details.items.NetworkItem
-import me.banes.chris.tivi.details.items.RatingItem
-import me.banes.chris.tivi.details.items.RuntimeItem
-import me.banes.chris.tivi.details.items.SummaryItem
-import me.banes.chris.tivi.details.items.TitleItem
+/* ktlint-disable no-unused-imports */
+import me.banes.chris.tivi.detailsBadge
+import me.banes.chris.tivi.detailsSummary
+import me.banes.chris.tivi.detailsTitle
+/* ktlint-disable no-unused-imports */
 import me.banes.chris.tivi.extensions.doWhenLaidOut
 import me.banes.chris.tivi.extensions.observeK
-import me.banes.chris.tivi.tmdb.TmdbImageUrlProvider
 import me.banes.chris.tivi.ui.GlidePaletteListener
 import me.banes.chris.tivi.ui.NoopApplyWindowInsetsListener
 import me.banes.chris.tivi.ui.RoundRectViewOutline
+import me.banes.chris.tivi.ui.epoxy.TotalSpanOverride
 import me.banes.chris.tivi.ui.transitions.DrawableAlphaProperty
 import me.banes.chris.tivi.util.ScrimUtil
 import javax.inject.Inject
@@ -66,10 +61,8 @@ class ShowDetailsFragment : TiviFragment() {
     }
 
     @Inject lateinit var viewModelFactory: ViewModelProvider.Factory
-    @Inject lateinit var imageUrlProvider: TmdbImageUrlProvider
 
     private lateinit var viewModel: ShowDetailsFragmentViewModel
-    private lateinit var groupAdapter: GroupAdapter<ViewHolder>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -85,16 +78,6 @@ class ShowDetailsFragment : TiviFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        groupAdapter = GroupAdapter()
-        groupAdapter.spanCount = 4
-
-        details_rv.apply {
-            layoutManager = GridLayoutManager(context, groupAdapter.spanCount).apply {
-                spanSizeLookup = groupAdapter.spanSizeLookup
-            }
-            adapter = groupAdapter
-        }
 
         details_backdrop.setOnApplyWindowInsetsListener(NoopApplyWindowInsetsListener)
 
@@ -126,11 +109,14 @@ class ShowDetailsFragment : TiviFragment() {
         }
     }
 
-    private fun update(show: TiviShow) {
+    private fun update(viewState: ShowDetailsFragmentViewState) {
+        val show = viewState.show
+        val imageProvider = viewState.tmdbImageUrlProvider
+
         show.tmdbBackdropPath?.let { path ->
             details_backdrop.doWhenLaidOut {
                 Glide.with(this)
-                        .load(imageUrlProvider.getBackdropUrl(path, details_backdrop.width))
+                        .load(imageProvider.getBackdropUrl(path, details_backdrop.width))
                         .listener(GlidePaletteListener(this::onBackdropPaletteLoaded))
                         .into(details_backdrop)
             }
@@ -139,19 +125,54 @@ class ShowDetailsFragment : TiviFragment() {
         show.tmdbPosterPath?.let { path ->
             details_poster.doWhenLaidOut {
                 Glide.with(this)
-                        .load(imageUrlProvider.getPosterUrl(path, details_poster.width))
+                        .load(imageProvider.getPosterUrl(path, details_poster.width))
                         .into(details_poster)
             }
         }
 
-        groupAdapter.apply {
-            clear()
-            add(TitleItem(show))
-            add(RatingItem(show))
-            add(CertificationItem(show))
-            add(NetworkItem(show))
-            add(RuntimeItem(show))
-            add(SummaryItem(show))
+        details_rv.buildModelsWith { controller ->
+            controller.detailsTitle {
+                id("title")
+                title(show.title)
+                subtitle(show.originalTitle)
+                genres(show.genres)
+                spanSizeOverride(TotalSpanOverride)
+            }
+
+            show.rating?.let { rating ->
+                controller.detailsBadge {
+                    id("rating")
+                    label(context?.getString(R.string.percentage_format, Math.round(rating * 10)))
+                    icon(R.drawable.ic_details_rating)
+                }
+            }
+            show.network?.let { network ->
+                controller.detailsBadge {
+                    id("network")
+                    label(network)
+                    icon(R.drawable.ic_details_network)
+                }
+            }
+            show.certification?.let { certificate ->
+                controller.detailsBadge {
+                    id("cert")
+                    label(certificate)
+                    icon(R.drawable.ic_details_certificate)
+                }
+            }
+            show.runtime?.let { runtime ->
+                controller.detailsBadge {
+                    id("runtime")
+                    label(context?.getString(R.string.minutes_format, runtime))
+                    icon(R.drawable.ic_details_runtime)
+                }
+            }
+
+            controller.detailsSummary {
+                id("summary")
+                summary(show.summary)
+                spanSizeOverride(TotalSpanOverride)
+            }
         }
 
         scheduleStartPostponedTransitions()
