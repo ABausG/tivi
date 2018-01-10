@@ -12,3 +12,4 @@ captures
 signing/app-release.jks
 signing/play-account.p12
 app/fabric.properties
+app/fabric.properties
