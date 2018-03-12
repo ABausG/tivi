@@ -16,7 +16,7 @@
 
 package me.banes.chris.tivi.trakt.calls
 
-import android.arch.paging.LivePagedListProvider
+import android.arch.paging.DataSource
 import io.reactivex.Completable
 import io.reactivex.Flowable
 import io.reactivex.Maybe
@@ -33,12 +33,12 @@ import me.banes.chris.tivi.util.AppRxSchedulers
 import timber.log.Timber
 
 abstract class PaginatedEntryCallImpl<TT, ET : PaginatedEntry, LI : ListItem<ET>, out ED : PaginatedEntryDao<ET, LI>>(
-        private val databaseTxRunner: DatabaseTxRunner,
-        protected val showDao: TiviShowDao,
-        private val entryDao: ED,
-        protected val schedulers: AppRxSchedulers,
-        protected val traktShowFetcher: TraktShowFetcher,
-        override val pageSize: Int = 21
+    private val databaseTxRunner: DatabaseTxRunner,
+    protected val showDao: TiviShowDao,
+    private val entryDao: ED,
+    protected val schedulers: AppRxSchedulers,
+    protected val traktShowFetcher: TraktShowFetcher,
+    override val pageSize: Int = 21
 ) : PaginatedCall<Unit, LI> {
 
     override fun data(param: Unit): Flowable<List<LI>> {
@@ -53,7 +53,7 @@ abstract class PaginatedEntryCallImpl<TT, ET : PaginatedEntry, LI : ListItem<ET>
                 .distinctUntilChanged()
     }
 
-    override fun liveList(): LivePagedListProvider<Int, LI> = entryDao.entriesLiveList()
+    override fun dataSourceFactory(): DataSource.Factory<Int, LI> = entryDao.entriesDataSource()
 
     private fun loadPage(page: Int = 0, resetOnSave: Boolean = false): Single<List<ET>> {
         return networkCall(page)

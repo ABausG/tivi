@@ -26,7 +26,7 @@ import org.threeten.bp.OffsetDateTime
 
 @Entity(tableName = "watched_entries",
         indices = [
-            Index(value = ["show_id"], unique = true)
+            Index(value = "show_id", unique = true)
         ],
         foreignKeys = [
             ForeignKey(entity = TiviShow::class,
@@ -36,7 +36,7 @@ import org.threeten.bp.OffsetDateTime
                     onDelete = ForeignKey.CASCADE)
         ])
 data class WatchedEntry(
-        @PrimaryKey(autoGenerate = true) override val id: Long? = null,
-        @ColumnInfo(name = "show_id") override val showId: Long,
-        @ColumnInfo(name = "last_watched") val lastWatched: OffsetDateTime
+    @PrimaryKey(autoGenerate = true) override val id: Long? = null,
+    @ColumnInfo(name = "show_id") override val showId: Long,
+    @ColumnInfo(name = "last_watched") val lastWatched: OffsetDateTime
 ) : Entry

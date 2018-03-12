@@ -25,7 +25,7 @@ import me.banes.chris.tivi.data.PaginatedEntry
 
 @Entity(tableName = "trending_shows",
         indices = [
-            Index(value = ["show_id"], unique = true)
+            Index(value = "show_id", unique = true)
         ],
         foreignKeys = [
             ForeignKey(entity = TiviShow::class,
@@ -35,8 +35,8 @@ import me.banes.chris.tivi.data.PaginatedEntry
                     onDelete = ForeignKey.CASCADE)
         ])
 data class TrendingEntry(
-        @PrimaryKey(autoGenerate = true) override val id: Long? = null,
-        @ColumnInfo(name = "show_id") override val showId: Long,
-        @ColumnInfo(name = "page") override val page: Int,
-        @ColumnInfo(name = "watchers") val watchers: Int
+    @PrimaryKey(autoGenerate = true) override val id: Long? = null,
+    @ColumnInfo(name = "show_id") override val showId: Long,
+    @ColumnInfo(name = "page") override val page: Int,
+    @ColumnInfo(name = "watchers") val watchers: Int
 ) : PaginatedEntry

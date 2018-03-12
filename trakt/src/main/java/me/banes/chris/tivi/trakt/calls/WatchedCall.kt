@@ -16,7 +16,7 @@
 
 package me.banes.chris.tivi.trakt.calls
 
-import android.arch.paging.LivePagedListProvider
+import android.arch.paging.DataSource
 import com.uwetrottmann.trakt5.TraktV2
 import com.uwetrottmann.trakt5.entities.UserSlug
 import com.uwetrottmann.trakt5.enums.Extended
@@ -33,11 +33,12 @@ import me.banes.chris.tivi.util.AppRxSchedulers
 import javax.inject.Inject
 
 class WatchedCall @Inject constructor(
-        private val databaseTxRunner: DatabaseTxRunner,
-        private val watchDao: WatchedDao,
-        private val traktShowFetcher: TraktShowFetcher,
-        private val trakt: TraktV2,
-        private val schedulers: AppRxSchedulers) : ListCall<Unit, WatchedListItem> {
+    private val databaseTxRunner: DatabaseTxRunner,
+    private val watchDao: WatchedDao,
+    private val traktShowFetcher: TraktShowFetcher,
+    private val trakt: TraktV2,
+    private val schedulers: AppRxSchedulers
+) : ListCall<Unit, WatchedListItem> {
 
     override val pageSize = 21
 
@@ -49,7 +50,7 @@ class WatchedCall @Inject constructor(
                 .subscribeOn(schedulers.database)
     }
 
-    override fun liveList(): LivePagedListProvider<Int, WatchedListItem> = watchDao.entriesLiveList()
+    override fun dataSourceFactory(): DataSource.Factory<Int, WatchedListItem> = watchDao.entriesDataSource()
 
     override fun refresh(param: Unit): Completable {
         return trakt.users().watchedShows(UserSlug.ME, Extended.NOSEASONS).toRxSingle()
