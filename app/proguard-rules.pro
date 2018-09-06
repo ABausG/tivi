@@ -5,13 +5,12 @@
 -verbose
 -dontpreverify
 
-# If you want to enable optimization, you should include the
-# following:
--dontoptimize
-#-optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*
-#-optimizationpasses 5
+# Optimize all the things (other than those listed)
+-optimizations !field/*,!method/removal/parameter
+-optimizationpasses 5
 
 -allowaccessmodification
+-repackageclasses ''
 
 # Note that you cannot just include these flags in your own
 # configuration file; if you are including this file, optimization
@@ -36,9 +35,7 @@
 }
 
 -keep public class * extends android.view.View {
-    public <init>(android.content.Context);
     public <init>(android.content.Context, android.util.AttributeSet);
-    public <init>(android.content.Context, android.util.AttributeSet, int);
 }
 
 -keepclasseswithmembers class * {
@@ -105,5 +102,33 @@
 -keepnames class com.uwetrottmann.tmdb2.entities.** { *; }
 
 # Keep stuff for Room
--keep class me.banes.chris.tivi.data.TiviTypeConverters { *; }
--keep class me.banes.chris.tivi.data.entities.** { *; }
+-keep class app.tivi.data.TiviTypeConverters { *; }
+-keep class app.tivi.data.entities.** { *; }
+
+# Glide
+-keep public class * implements com.bumptech.glide.module.GlideModule
+-keep public class * extends com.bumptech.glide.module.AppGlideModule
+-keep public enum com.bumptech.glide.load.ImageHeaderParser$** {
+  **[] $VALUES;
+  public *;
+}
+
+# Coroutines
+-keepclassmembernames class kotlinx.** {
+    volatile <fields>;
+}
+
+# BaseMvRxViewModels loads the Companion class via reflection and thus we need to make sure we keep
+# the name of the Companion object.
+-keepclassmembers class ** extends com.airbnb.mvrx.BaseMvRxViewModel {
+    ** Companion;
+}
+
+# Classes extending BaseMvRxViewModel are recreated using reflection, which assumes that a one argument
+# constructor accepting a data class holding the state exists. Need to make sure to keep the constructor
+# around. Additionally, a static create method will be generated in the case a companion object factory
+# is used. This is accessed via reflection.
+-keepclassmembers class ** extends com.airbnb.mvrx.BaseMvRxViewModel {
+    public <init>(...);
+    public static *** create(...);
+}

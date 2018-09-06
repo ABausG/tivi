@@ -17,14 +17,24 @@
   -->
 
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <data>
+
         <import type="android.content.Context" />
 
-        <variable name="title" type="int" />
-        <variable name="buttonTitle" type="int" />
-        <variable name="buttonClickListener" type="android.view.View.OnClickListener" />
+        <variable
+            name="title"
+            type="int" />
+
+        <variable
+            name="buttonTitle"
+            type="int" />
+
+        <variable
+            name="buttonClickListener"
+            type="android.view.View.OnClickListener" />
     </data>
 
     <FrameLayout
@@ -41,8 +51,8 @@
             android:layout_marginStart="@dimen/header_margin"
             android:gravity="center_vertical"
             android:text="@{title}"
-            android:textAppearance="@style/TextAppearance.AppCompat.Body2"
-            tools:text="Game of Thrones" />
+            android:textAppearance="?attr/textAppearanceSubtitle1"
+            tools:text="Popular" />
 
         <TextView
             android:id="@+id/header_more"
@@ -55,8 +65,9 @@
             android:onClick="@{buttonClickListener}"
             android:text="@{buttonTitle != 0 ? context.getString(buttonTitle) : @string/header_more}"
             android:textAllCaps="true"
-            android:textAppearance="@style/TextAppearance.AppCompat.Body2"
-            android:textColor="@color/colorAccent" />
+            android:textAppearance="?attr/textAppearanceButton"
+            android:textColor="@color/colorAccent"
+            app:visibleIfNotNull="@{buttonClickListener}" />
 
     </FrameLayout>
 </layout>

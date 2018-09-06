@@ -16,7 +16,13 @@
  */
 
 include ':base'
-include ':trakt'
+include ':base-android'
 include ':data'
+include ':data-android'
+include ':trakt'
+include ':trakt-auth'
 include ':tmdb'
+include ':datasources'
+include ':tasks'
+include ':interactors'
 include ':app'
